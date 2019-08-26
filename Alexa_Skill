@@ -1,0 +1,164 @@
+
+
+Skip to content
+Using Gmail with screen readers
+
+1 of 2,591
+(no subject)
+Inbox
+x
+
+Shezan Baig <baigshezan90@gmail.com>
+Attachments
+12:11 AM (0 minutes ago)
+to me
+
+Hi Sabir,
+
+Please find the attachment.
+
+
+Thanks,
+Shezan Baig
+TD Associate
+
+
+
+
+Attachments area
+Received, thank you.Thanks a lot.Well received with thanks.
+
+import json
+#import boto3
+import pandas as pd 
+import xlrd as xr
+df =pd.read_excel(r"Data.xlsx",sheet_name = 'Data')
+total = len(df.axes[0])
+countc = 0
+for i in df['Status']:
+    if i == 'Closed':
+        countc=countc+1
+countr = 0
+for i in df['Status']:
+    if i == 'Resolved':
+        countr=countr+1
+countp = 0
+for i in df['Status']:
+    if i == 'Pending Customer':
+        countp=countp+1
+        
+h=l=m=0
+for i in df['Urgency']:
+    if i == 'HIGH':
+        h=h+1
+    elif i == 'LOW':
+        l=l+1
+    elif i == 'MEDIUM':
+        m = m+1
+sum = 0
+for i in df['Total Time Spent']:
+    sum = sum+i
+avg_res= int(sum/total)
+
+def lambda_handler(event, context):
+    if event['request']['type'] == "LaunchRequest":
+        return build_response('Welcome to teradata smart ticketing system. \nHow may I help you? \nCan I help you with Open tickets,\nClose Tickets,\nAverage resolution time or \n anything else,\nJust name it', False)
+    elif event['request']['type'] == "IntentRequest":
+        return on_intent(event['request'], event['session'])
+    else:
+        raise ValueError("Invalid intent")
+   
+     
+
+def on_intent(intent_request, session):
+    intent = intent_request['intent']
+    intent_name = intent_request['intent']['name']
+           
+    if intent_name == "UpdateIntent":
+        closeTickets = get_closed_tickets()
+        openTickets = get_open_tickets()
+        return build_response('We have total'+ str(total)+' tickets.'+' , '+ 'We have ' + str(closeTickets) + ' tickets closed. '+ ' , '+'We have ' + str(openTickets) + ' tickets pending. We have '+ str(h)+' critical tickets and'+str(l)+' low priority tickets',False)
+    if intent_name == "CloseTicketIntent":
+        closeTickets = get_closed_tickets()
+        return build_response('We have ' + str(closeTickets) + ' tickets closed.', False)
+        
+    if intent_name == "TotalTicketCount":
+        closeTickets = get_Total_tickets()
+        return build_response('We have total' + str(closeTickets) + ' tickets.', False)
+     
+    if intent_name == "AverageResolvedTime":
+        avg = average_resolved_time()
+        return build_response('Average Resolved Time is '+str(avg)+'minutes',False)
+        
+    elif intent_name == "OpenTicketIntent":
+        openTickets = get_open_tickets()
+        return build_response('We have ' + str(openTickets) + ' tickets pending.', False)
+
+
+    elif intent_name == 'AMAZON.FallbackIntent':
+        return build_response("I didn't understand, please repeat.", False)
+    else:
+        return build_response('Unknown intent called.')
+
+    
+def ask_intent(event,context,intent):    
+    dialog_state = event['request']['dialogState']
+    if dialog_state in ("STARTED", "IN_PROGRESS"):
+        return continue_dialog()
+    if dialog_state == "COMPLETED":
+        if 'Dates' in intent['slots']:
+            if 'value' in intent['slots']['Dates']:
+                mySlotValue = intent['slots']['Dates']['value'] 
+                val =str(mySlotValue)
+                df['Sender_str'] = df['Open Time'].map(str)
+                m = int(df.loc[df['Sender_str'].str.contains(val)]['Total Time Spent'].mean())
+                hr = int(m/60)
+                mn = m % 60
+                return build_response('Average resoution time is '+ str(hr)  +'hour and '+str(mn)+'minutes',False)
+    else:
+        return build_response("No dialog",False)
+def continue_dialog():
+    message = {}
+    message['shouldEndSession'] = False
+    message['directives'] = [{'type': 'Dialog.Delegate'}]
+    return build_response(message)
+    
+def get_Total_tickets():
+    return total
+
+def get_open_tickets():
+    return countp
+
+def average_resolved_time():
+    return avg_res
+    
+def get_closed_tickets():   
+    return countc
+
+
+def build_response(msg, sessionEnd):
+    return {
+        'version': '1.0',
+        'response': {
+            'outputSpeech': {
+                'type': 'PlainText',
+                'text': msg
+            },
+        'shouldEndSession': sessionEnd
+        }
+    }
+
+
+def build_response2(msg, sessionEnd):
+    return {
+        'version': '1.0',
+        'response': {
+            'outputSpeech': {
+                'type': 'PlainText',
+                'text': msg
+            },
+        'shouldEndSession': sessionEnd
+        }
+    }
+lambda_function.py
+Displaying lambda_function.py.
